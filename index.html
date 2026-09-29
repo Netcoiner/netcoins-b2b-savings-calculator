@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Estimate what a business could save on card processing, chargebacks and international wires by using crypto payment rails. Illustrative only.">
+<title>Netcoins Business Savings Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: compact navy masthead, then a two-column workbench — inputs left, a sticky savings ledger right; stacks on phones. */
+:root {
+  --bg: #F3F4F9;
+  --surface: #FFFFFF;
+  --ink: #07072E;
+  --muted: #5A5C7A;
+  --line: #DCDDE8;
+  --accent: #3D65F6;
+  --accent-soft: #E7ECFF;
+  --band: #07072E;
+  --band-ink: #FFFFFF;
+  --band-muted: #B7BCE6;
+  --current: #A4A7C1;
+  --good: #0B7F57;
+  --good-soft: #E1F4EC;
+  --font-display: "Manrope", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #07072E; --surface: #0F1040; --ink: #EEF0FB; --muted: #A5A9CC; --line: #25275C;
+    --accent: #7390FF; --accent-soft: #1A1F5E; --band: #001C64; --band-ink: #FFFFFF; --band-muted: #B7C3F2;
+    --current: #555885; --good: #43D19C; --good-soft: #0E3A33; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #07072E; --surface: #0F1040; --ink: #EEF0FB; --muted: #A5A9CC; --line: #25275C;
+  --accent: #7390FF; --accent-soft: #1A1F5E; --band: #001C64; --band-ink: #FFFFFF; --band-muted: #B7C3F2;
+  --current: #555885; --good: #43D19C; --good-soft: #0E3A33; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+.wrap { max-width: 1160px; margin: 0 auto; padding-inline: 20px; }
+
+/* masthead */
+.band { background: var(--band); color: var(--band-ink); padding-block: 40px 88px; }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--band-muted); }
+.band h1 { font-size: clamp(28px, 4.2vw, 44px); font-weight: 700; line-height: 1.12; margin-top: 10px; max-width: 18ch; letter-spacing: -.01em; }
+.band p { color: var(--band-muted); max-width: 60ch; margin: 14px 0 0; font-size: 16px; }
+.presets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+.presets span { font-size: 13px; color: var(--band-muted); align-self: center; margin-right: 4px; }
+.chip { font: 500 14px var(--font-body); color: var(--band-ink); background: transparent; border: 1px solid rgba(255,255,255,.28); border-radius: 999px; padding: 7px 14px; cursor: pointer; transition: background .15s, border-color .15s; }
+.chip:hover { border-color: rgba(255,255,255,.6); }
+.chip[aria-pressed="true"] { background: #3D65F6; border-color: #3D65F6; }
+.chip:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* workbench */
+.bench { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 24px; margin-top: -56px; padding-bottom: 48px; align-items: start; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; min-width: 0; }
+.inputs { display: flex; flex-direction: column; gap: 28px; }
+.section-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.section-head h2 { font-size: 18px; font-weight: 700; }
+.section-head p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+.group { display: flex; flex-direction: column; gap: 18px; padding-top: 22px; border-top: 1px solid var(--line); }
+.group:first-child { padding-top: 0; border-top: 0; }
+.toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); cursor: pointer; user-select: none; }
+.toggle input { width: 36px; height: 20px; appearance: none; background: var(--line); border-radius: 999px; position: relative; cursor: pointer; transition: background .15s; margin: 0; }
+.toggle input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .15s; }
+.toggle input:checked { background: var(--accent); }
+.toggle input:checked::after { transform: translateX(16px); }
+.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 18px; }
+.group.off .fields, .group.off details { opacity: .4; pointer-events: none; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field.wide { grid-column: 1 / -1; }
+.field label { font-size: 13px; font-weight: 500; color: var(--muted); }
+.box { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); transition: border-color .15s; }
+.box:focus-within { border-color: var(--accent); }
+.box .unit { color: var(--muted); font-size: 14px; padding-inline: 12px 0; font-variant-numeric: tabular-nums; }
+.box .unit.after { padding-inline: 0 12px; }
+.box input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--ink); font: 600 16px var(--font-body); padding: 10px 12px; font-variant-numeric: tabular-nums; outline: none; }
+input[type="range"] { width: 100%; accent-color: var(--accent); margin: 2px 0 0; }
+details { border-radius: 8px; }
+summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--accent); list-style: none; display: inline-flex; gap: 6px; align-items: center; }
+summary::-webkit-details-marker { display: none; }
+summary::before { content: "+"; font-weight: 700; width: 1em; }
+details[open] summary::before { content: "–"; }
+details .fields { margin-top: 14px; }
+.hint { font-size: 12px; color: var(--muted); margin: 0; }
+
+/* ledger */
+.ledger { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); display: flex; flex-direction: column; gap: 22px; }
+.headline-num { display: flex; flex-direction: column; gap: 4px; }
+.headline-num .lbl { font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.big { font-family: var(--font-display); font-weight: 800; font-size: clamp(38px, 5vw, 54px); line-height: 1; color: var(--good); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.sub { color: var(--muted); font-size: 14px; }
+.sub strong { color: var(--ink); font-weight: 600; }
+.pill { display: inline-block; font-size: 12px; font-weight: 600; background: var(--good-soft); color: var(--good); border-radius: 999px; padding: 3px 10px; align-self: flex-start; margin-top: 6px; }
+
+.bars { display: flex; flex-direction: column; gap: 12px; }
+.bar-row { display: grid; grid-template-columns: 70px minmax(0, 1fr) 84px; gap: 10px; align-items: center; font-size: 13px; }
+.bar-row .name { color: var(--muted); }
+.bar-row .val { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.track { height: 14px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+.fill { height: 100%; border-radius: 4px; transition: width .35s ease; }
+.fill.cur { background: var(--current); }
+.fill.cry { background: var(--accent); }
+
+table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+th { text-align: left; font-weight: 500; color: var(--muted); font-size: 12px; letter-spacing: .04em; text-transform: uppercase; padding: 0 0 8px; }
+th.n, td.n { text-align: right; }
+td { padding: 9px 0; border-top: 1px solid var(--line); }
+td.save { color: var(--good); font-weight: 600; }
+tr.total td { font-weight: 700; border-top: 2px solid var(--ink); }
+
+.float { background: var(--accent-soft); border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; }
+.float .lbl { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+.float .v { font-family: var(--font-display); font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.float p { margin: 0; font-size: 13px; color: var(--muted); }
+
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn { font: 600 14px var(--font-body); border-radius: 8px; padding: 11px 16px; cursor: pointer; border: 1px solid var(--line); background: var(--surface); color: var(--ink); text-decoration: none; display: inline-flex; align-items: center; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn:hover { filter: brightness(1.05); }
+.status { font-size: 13px; color: var(--good); align-self: center; min-height: 1em; }
+textarea.fallback { width: 100%; min-height: 120px; font: 13px/1.5 var(--font-body); background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+
+/* how it works + fine print */
+.explain { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; padding-block: 8px 40px; }
+.explain h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+.explain p { margin: 0; color: var(--muted); font-size: 14px; max-width: 42ch; }
+.fine { border-top: 1px solid var(--line); padding-block: 24px 48px; color: var(--muted); font-size: 12.5px; }
+.fine p { margin: 0 0 8px; max-width: 95ch; }
+
+@media (max-width: 900px) {
+  .bench { grid-template-columns: minmax(0, 1fr); }
+  .ledger { position: static; order: -1; }
+  .explain { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+}
+@media (max-width: 520px) {
+  .wrap { padding-inline: 16px; }
+  .panel { padding: 18px; }
+  .fields { grid-template-columns: minmax(0, 1fr); }
+  .band { padding-block: 28px 76px; }
+  .bar-row { grid-template-columns: 60px minmax(0, 1fr) 76px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+<header class="band">
+  <div class="wrap">
+    <div class="eyebrow">Netcoins for Business · Savings calculator</div>
+    <h1>See what crypto payment rails could save your business</h1>
+    <p>Compare what you pay today in card processing, chargebacks and international wires with the cost of accepting and sending digital assets. Every assumption is editable.</p>
+    <div class="presets" role="group" aria-label="Example business profiles">
+      <span>Start from an example:</span>
+      <button class="chip" type="button" data-preset="ecom" aria-pressed="true">Online retailer</button>
+      <button class="chip" type="button" data-preset="import" aria-pressed="false">Importer / wholesaler</button>
+      <button class="chip" type="button" data-preset="agency" aria-pressed="false">Agency with overseas contractors</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="bench">
+    <form class="panel inputs" id="calc" autocomplete="off">
+      <div class="group" id="g-accept">
+        <div class="section-head">
+          <div>
+            <h2>Customer payments</h2>
+            <p>Card sales you could offer to take in crypto instead.</p>
+          </div>
+          <label class="toggle"><input type="checkbox" id="on-accept" checked> Include</label>
+        </div>
+        <div class="fields">
+          <div class="field wide">
+            <label for="volume">Monthly card sales</label>
+            <div class="box"><span class="unit">$</span><input id="volume" inputmode="decimal"></div>
+            <input type="range" id="volume-r" min="0" max="2000000" step="5000" aria-label="Monthly card sales slider">
+          </div>
+          <div class="field wide">
+            <label for="shift">Share of customers paying in crypto</label>
+            <div class="box"><input id="shift" inputmode="decimal"><span class="unit after">%</span></div>
+            <input type="range" id="shift-r" min="0" max="100" step="1" aria-label="Crypto share slider">
+          </div>
+          <div class="field">
+            <label for="ticket">Average order</label>
+            <div class="box"><span class="unit">$</span><input id="ticket" inputmode="decimal"></div>
+          </div>
+          <div class="field">
+            <label for="cbRate">Chargeback rate</label>
+            <div class="box"><input id="cbRate" inputmode="decimal"><span class="unit after">% of orders</span></div>
+          </div>
+        </div>
+        <details>
+          <summary>Fee assumptions</summary>
+          <div class="fields">
+            <div class="field">
+              <label for="cardRate">Card processing rate</label>
+              <div class="box"><input id="cardRate" inputmode="decimal"><span class="unit after">%</span></div>
+            </div>
+            <div class="field">
+              <label for="cardFixed">Card fee per transaction</label>
+              <div class="box"><span class="unit">$</span><input id="cardFixed" inputmode="decimal"></div>
+            </div>
+            <div class="field">
+              <label for="cbFee">Chargeback fee</label>
+              <div class="box"><span class="unit">$</span><input id="cbFee" inputmode="decimal"></div>
+            </div>
+            <div class="field">
+              <label for="cryptoRate">Crypto processing + conversion</label>
+              <div class="box"><input id="cryptoRate" inputmode="decimal"><span class="unit after">%</span></div>
+            </div>
+            <div class="field">
+              <label for="netFee">Network fee per payment</label>
+              <div class="box"><span class="unit">$</span><input id="netFee" inputmode="decimal"></div>
+            </div>
+            <div class="field">
+              <label for="settleDays">Card settlement delay</label>
+              <div class="box"><input id="settleDays" inputmode="decimal"><span class="unit after">business days</span></div>
+            </div>
+          </div>
+          <p class="hint" style="margin-top:10px">Chargeback cost counts the fee plus the lost order value. Crypto payments are final once confirmed, so refunds are issued by you, not forced by a card network.</p>
+        </details>
+      </div>
+
+      <div class="group" id="g-send">
+        <div class="section-head">
+          <div>
+            <h2>International payments</h2>
+            <p>Money you send to suppliers, contractors or partners abroad.</p>
+          </div>
+          <label class="toggle"><input type="checkbox" id="on-send" checked> Include</label>
+        </div>
+        <div class="fields">
+          <div class="field wide">
+            <label for="intl">Monthly amount sent abroad</label>
+            <div class="box"><span class="unit">$</span><input id="intl" inputmode="decimal"></div>
+            <input type="range" id="intl-r" min="0" max="1000000" step="5000" aria-label="Monthly amount sent abroad slider">
+          </div>
+          <div class="field">
+            <label for="wires">Transfers per month</label>
+            <div class="box"><input id="wires" inputmode="decimal"><span class="unit after">wires</span></div>
+          </div>
+          <div class="field">
+            <label for="wireFee">Bank wire fee</label>
+            <div class="box"><span class="unit">$</span><input id="wireFee" inputmode="decimal"><span class="unit after">each</span></div>
+          </div>
+        </div>
+        <details>
+          <summary>Fee assumptions</summary>
+          <div class="fields">
+            <div class="field">
+              <label for="fx">Bank FX markup</label>
+              <div class="box"><input id="fx" inputmode="decimal"><span class="unit after">%</span></div>
+            </div>
+            <div class="field">
+              <label for="stableSpread">Stablecoin conversion spread</label>
+              <div class="box"><input id="stableSpread" inputmode="decimal"><span class="unit after">%</span></div>
+            </div>
+            <div class="field">
+              <label for="stableFee">Network fee per transfer</label>
+              <div class="box"><span class="unit">$</span><input id="stableFee" inputmode="decimal"></div>
+            </div>
+          </div>
+          <p class="hint" style="margin-top:10px">Assumes your recipient accepts a USD stablecoin such as USDC and converts it locally. Their off-ramp costs are not included.</p>
+        </details>
+      </div>
+    </form>
+
+    <aside class="panel ledger" aria-live="polite">
+      <div class="headline-num">
+        <span class="lbl">Estimated annual savings</span>
+        <span class="big" id="annual">$0</span>
+        <span class="sub"><strong id="monthly">$0</strong> a month · <strong id="pct">0%</strong> lower payment costs</span>
+      </div>
+
+      <div class="bars" aria-label="Monthly cost comparison">
+        <div class="bar-row"><span class="name">Today</span><div class="track"><div class="fill cur" id="bar-cur"></div></div><span class="val" id="val-cur">$0</span></div>
+        <div class="bar-row"><span class="name">Crypto</span><div class="track"><div class="fill cry" id="bar-cry"></div></div><span class="val" id="val-cry">$0</span></div>
+      </div>
+
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Monthly cost</th><th class="n">Today</th><th class="n">Crypto</th><th class="n">Saved</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+
+      <div class="float">
+        <span class="lbl">Cash in hand sooner</span>
+        <span class="v" id="float">$0</span>
+        <p id="float-note">Card sales held in settlement at any time. Crypto payments settle in minutes. Not counted in the savings above.</p>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" type="button" id="copy">Copy summary</button>
+        <a class="btn" href="https://netcoins.com" target="_blank" rel="noopener">Talk to Netcoins</a>
+        <span class="status" id="status"></span>
+      </div>
+      <textarea class="fallback" id="fallback" hidden readonly aria-label="Summary text"></textarea>
+    </aside>
+  </div>
+
+  <section class="explain" aria-label="How the estimate works">
+    <div>
+      <h3>Lower processing fees</h3>
+      <p>Card networks take a percentage plus a fixed fee on every sale. Crypto payments usually cost a flat processing and conversion rate, with no interchange.</p>
+    </div>
+    <div>
+      <h3>No forced chargebacks</h3>
+      <p>Confirmed blockchain payments cannot be reversed by a third party. You still handle refunds, on your own terms, without dispute fees.</p>
+    </div>
+    <div>
+      <h3>Cheaper cross-border transfers</h3>
+      <p>Stablecoin transfers skip correspondent banks and wide FX markups, and arrive in minutes instead of two to five business days.</p>
+    </div>
+  </section>
+
+  <footer class="fine">
+    <p><strong>For illustration only.</strong> Figures are estimates based on the assumptions entered above and example profiles. They are not quotes and do not describe any specific Netcoins product or fee. Actual costs depend on your providers, payment networks, volumes and market conditions.</p>
+    <p>Crypto asset prices can move quickly. Converting incoming payments to CAD on receipt, or using stablecoins, reduces but does not remove that exposure. Stablecoins carry their own issuer and liquidity risks. Some customers and suppliers will not use crypto.</p>
+    <p>This calculator is not financial, tax, accounting or legal advice. Speak with your accountant about how crypto payments are recorded and taxed for your business in Canada.</p>
+  </footer>
+</main>
+
+<script>
+(function () {
+  var PRESETS = {
+    ecom:   { volume: 250000, shift: 10, ticket: 120, cbRate: 0.6, cardRate: 2.9, cardFixed: 0.30, cbFee: 25, cryptoRate: 1.0, netFee: 0.10, settleDays: 2, intl: 40000,  wires: 4,  wireFee: 45, fx: 2.5, stableSpread: 0.5, stableFee: 2, accept: true,  send: true },
+    import: { volume: 600000, shift: 5,  ticket: 1800, cbRate: 0.2, cardRate: 2.6, cardFixed: 0.30, cbFee: 25, cryptoRate: 1.0, netFee: 0.10, settleDays: 2, intl: 350000, wires: 20, wireFee: 50, fx: 2.5, stableSpread: 0.4, stableFee: 2, accept: true,  send: true },
+    agency: { volume: 90000,  shift: 5,  ticket: 3500, cbRate: 0.1, cardRate: 2.9, cardFixed: 0.30, cbFee: 25, cryptoRate: 1.0, netFee: 0.10, settleDays: 2, intl: 60000,  wires: 15, wireFee: 40, fx: 3.0, stableSpread: 0.5, stableFee: 2, accept: false, send: true }
+  };
+  var KEYS = ["volume","shift","ticket","cbRate","cardRate","cardFixed","cbFee","cryptoRate","netFee","settleDays","intl","wires","wireFee","fx","stableSpread","stableFee"];
+  var SLIDERS = { volume: "volume-r", shift: "shift-r", intl: "intl-r" };
+  var $ = function (id) { return document.getElementById(id); };
+  var money = new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 0 });
+  var fmt = function (n) { return money.format(Math.round(n)).replace("CA", ""); };
+  var num = function (id) { var v = parseFloat(String($(id).value).replace(/[, $]/g, "")); return isFinite(v) && v > 0 ? v : 0; };
+
+  function setValue(id, v) {
+    $(id).value = (id === "volume" || id === "intl") ? Math.round(v).toLocaleString("en-CA") : v;
+    if (SLIDERS[id]) $(SLIDERS[id]).value = v;
+  }
+
+  function applyPreset(name) {
+    var p = PRESETS[name];
+    KEYS.forEach(function (k) { setValue(k, p[k]); });
+    $("on-accept").checked = p.accept;
+    $("on-send").checked = p.send;
+    document.querySelectorAll(".chip").forEach(function (c) { c.setAttribute("aria-pressed", c.dataset.preset === name ? "true" : "false"); });
+    try { localStorage.setItem("nc-b2b-preset", name); } catch (e) {}
+    calc();
+  }
+
+  // Pure calculation: all amounts monthly, CAD.
+  function compute(v) {
+    var shifted = v.accept ? v.volume * Math.min(v.shift, 100) / 100 : 0;
+    var txns = v.ticket > 0 ? shifted / v.ticket : 0;
+    var cardFees = shifted * v.cardRate / 100 + txns * v.cardFixed;
+    var cryptoFees = shifted * v.cryptoRate / 100 + txns * v.netFee;
+    var chargebacks = txns * v.cbRate / 100 * (v.cbFee + v.ticket);
+    var intl = v.send ? v.intl : 0, wires = v.send ? v.wires : 0;
+    var wireCost = wires * v.wireFee, fxCost = intl * v.fx / 100;
+    var stableCost = wires * v.stableFee + intl * v.stableSpread / 100;
+    var rows = [];
+    if (v.accept) {
+      rows.push({ name: "Processing fees", cur: cardFees, cry: cryptoFees });
+      rows.push({ name: "Chargebacks", cur: chargebacks, cry: 0 });
+    }
+    if (v.send) {
+      rows.push({ name: "Wire fees", cur: wireCost, cry: wires * v.stableFee });
+      rows.push({ name: "FX markup", cur: fxCost, cry: intl * v.stableSpread / 100 });
+    }
+    var cur = rows.reduce(function (s, r) { return s + r.cur; }, 0);
+    var cry = rows.reduce(function (s, r) { return s + r.cry; }, 0);
+    var floatAmt = shifted / 21.7 * v.settleDays; // business days per month
+    return { rows: rows, cur: cur, cry: cry, save: cur - cry, floatAmt: floatAmt, shifted: shifted };
+  }
+
+  function read() {
+    var v = {}; KEYS.forEach(function (k) { v[k] = num(k); });
+    v.accept = $("on-accept").checked; v.send = $("on-send").checked;
+    return v;
+  }
+
+  var last;
+  function calc() {
+    var v = read(), r = compute(v); last = { v: v, r: r };
+    $("g-accept").classList.toggle("off", !v.accept);
+    $("g-send").classList.toggle("off", !v.send);
+    var save = Math.max(r.save, 0);
+    $("annual").textContent = fmt(save * 12);
+    $("monthly").textContent = fmt(save);
+    $("pct").textContent = r.cur > 0 ? Math.round(save / r.cur * 100) + "%" : "0%";
+    var max = Math.max(r.cur, r.cry, 1);
+    $("bar-cur").style.width = (r.cur / max * 100) + "%";
+    $("bar-cry").style.width = (r.cry / max * 100) + "%";
+    $("val-cur").textContent = fmt(r.cur);
+    $("val-cry").textContent = fmt(r.cry);
+    var html = r.rows.map(function (row) {
+      return "<tr><td>" + row.name + "</td><td class=\"n\">" + fmt(row.cur) + "</td><td class=\"n\">" + fmt(row.cry) + "</td><td class=\"n save\">" + fmt(row.cur - row.cry) + "</td></tr>";
+    }).join("");
+    if (!r.rows.length) html = "<tr><td colspan=\"4\" style=\"color:var(--muted)\">Turn on customer or international payments to see a comparison.</td></tr>";
+    else html += "<tr class=\"total\"><td>Total</td><td class=\"n\">" + fmt(r.cur) + "</td><td class=\"n\">" + fmt(r.cry) + "</td><td class=\"n save\">" + fmt(r.save) + "</td></tr>";
+    $("rows").innerHTML = html;
+    $("float").textContent = fmt(r.floatAmt);
+    $("float-note").textContent = v.accept
+      ? "About " + v.settleDays + " business days of crypto-eligible card sales sit in settlement at any time. Crypto payments settle in minutes. Not counted in the savings above."
+      : "Turn on customer payments to estimate cash held in card settlement.";
+  }
+
+  function summary() {
+    var v = last.v, r = last.r, lines = ["Netcoins business savings estimate (illustrative)", ""];
+    r.rows.forEach(function (row) { lines.push(row.name + ": " + fmt(row.cur) + " today vs " + fmt(row.cry) + " with crypto (" + fmt(row.cur - row.cry) + " saved/month)"); });
+    lines.push("", "Estimated savings: " + fmt(Math.max(r.save, 0)) + "/month, " + fmt(Math.max(r.save, 0) * 12) + "/year");
+    if (v.accept) lines.push("Cash settled sooner: " + fmt(r.floatAmt));
+    lines.push("", "Estimates only, based on entered assumptions. Not financial, tax or legal advice.");
+    return lines.join("\n");
+  }
+
+  KEYS.forEach(function (k) {
+    $(k).addEventListener("input", function () {
+      if (SLIDERS[k]) $(SLIDERS[k]).value = num(k);
+      calc();
+    });
+    $(k).addEventListener("blur", function () { if (k === "volume" || k === "intl") setValue(k, num(k)); });
+  });
+  Object.keys(SLIDERS).forEach(function (k) {
+    $(SLIDERS[k]).addEventListener("input", function (e) { setValue(k, +e.target.value); calc(); });
+  });
+  ["on-accept", "on-send"].forEach(function (id) { $(id).addEventListener("change", calc); });
+  document.querySelectorAll(".chip").forEach(function (c) { c.addEventListener("click", function () { applyPreset(c.dataset.preset); }); });
+  $("calc").addEventListener("submit", function (e) { e.preventDefault(); });
+  $("copy").addEventListener("click", function () {
+    var text = summary();
+    var done = function () { $("status").textContent = "Copied"; setTimeout(function () { $("status").textContent = ""; }, 2000); };
+    var fallback = function () { var t = $("fallback"); t.value = text; t.hidden = false; t.focus(); t.select(); $("status").textContent = "Select and copy the text below"; };
+    try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
+  });
+
+  var start = "ecom";
+  try { var s = localStorage.getItem("nc-b2b-preset"); if (s && PRESETS[s]) start = s; } catch (e) {}
+  applyPreset(start);
+})();
+</script>
+</body>
+</html>
